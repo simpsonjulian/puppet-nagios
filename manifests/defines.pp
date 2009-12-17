@@ -195,6 +195,7 @@ define nagios::plugin(
     ensure => $ensure,
     source => "puppet://$server/nagios/plugins/$name",
     require => Package['nagios-plugins'],
+    require => Class["nagios::$operatingsystem"],
     owner => root, group => 0, mode => 0755;
   }
 }
