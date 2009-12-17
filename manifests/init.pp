@@ -19,6 +19,8 @@ import 'defines.pp'
 class nagios {
     case $operatingsystem {
         centos: { include nagios::centos }
+        darwin: { include nagios::darwin }
+        ubuntu: { include nagios::ubuntu }
         default: { fail("No such operatingsystem: $operatingsystem yet defined") }
     }
 }
@@ -195,3 +197,5 @@ class nagios::centos inherits nagios::base {
         owner => root, group => nagios, mode => '0640';
     }
 }
+class nagios::darwin inherits nagios::base {}
+class nagios::ubuntu inherits nagios::base {}
