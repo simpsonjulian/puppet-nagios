@@ -29,22 +29,29 @@ class nagios::base {
 
     # needs apache to work
     include apache
-
-    package { nagios:
-        ensure => present,   
+    case $operatingsystem {
+        centos: { $nagios_pkg = 'nagios' }
+        ubuntu: { $nagios_pkg = 'nagios3'}
+        default: { fail("No such operatingsystem: $operatingsystem yet defined") }
     }
 
-    service{nagios:
+    package { "$nagios_pkg":
+        ensure => present,   
+        alias => nagios;
+    }
+
+    service{"$nagios_pkg":
         ensure => running,
         enable => true,
+        alias => nagios,
         #hasstatus => true, #fixme!
-        require => Package[nagios],
+        require => Package["nagios"],
     }
 
     # manage nagios cfg files
     file {nagios_cfg_dir:
-        path => "/etc/nagios/",
-        source => "puppet://$server/nagios/empty",
+        path => "/etc/${nagios_pkg}/",
+        source => "puppet:///nagios/empty",
         ensure => directory,
         recurse => true,
         purge => true,
@@ -53,47 +60,43 @@ class nagios::base {
     }
     # this file should contain all the nagios_puppet-paths:
     file {nagios_main_cfg: 
-            path => "/etc/nagios/nagios.cfg",
-			source => [ "puppet://$server/files/nagios/configs/${fqdn}/nagios.cfg",
-                        "puppet://$server/files/nagios/configs/${operatingsystem}/nagios.cfg",
-                        "puppet://$server/files/nagios/configs/nagios.cfg",
-                        "puppet://$server/nagios/configs/${operatingsystem}/nagios.cfg",
-                        "puppet://$server/nagios/configs/nagios.cfg" ],
+            path => "/etc/${nagios_pkg}/nagios.cfg",
+			source => [ "puppet:///nagios/configs/${fqdn}/nagios.cfg",
+                        "puppet:///nagios/configs/${operatingsystem}/nagios.cfg",
+                        "puppet:///nagios/configs/nagios.cfg" ],
             notify => Service[nagios],
             mode => 0644, owner => root, group => root;
     }    
     file { nagios_cgi_cfg:
-        path => "/etc/nagios/cgi.cfg",
-        source => [ "puppet://$server/files/nagios/configs/${fqdn}/cgi.cfg",
-                    "puppet://$server/files/nagios/configs/${operatingsystem}/cgi.cfg",
-                    "puppet://$server/files/nagios/configs/cgi.cfg",
-                    "puppet://$server/nagios/configs/${operatingsystem}/cgi.cfg",
-                    "puppet://$server/nagios/configs/cgi.cfg" ],
+        path => "/etc/${nagios_pkg}/cgi.cfg",
+        source => [ "puppet:///nagios/configs/${fqdn}/cgi.cfg",
+                    "puppet:///nagios/configs/${operatingsystem}/cgi.cfg",
+                    "puppet:///nagios/configs/cgi.cfg" ],
         owner => 'root',
         group => 0,
         mode => '0644',
         notify => Service['apache'],
     }
     
-	file {"/etc/nagios/htpasswd.users":
+	file {"/etc/${nagios_pkg}/htpasswd.users":
             source => [
-                "puppet://$server/files/nagios/htpasswd.users",
-                "puppet://$server/nagios/htpasswd.users" ],
+                "puppet:///nagios/htpasswd.users" ],
             mode => 0640, owner => root, group => apache;
     }
 
-    file{[ "/etc/nagios/nagios_command.cfg", 
-           "/etc/nagios/nagios_contact.cfg", 
-           "/etc/nagios/nagios_contactgroup.cfg",
-           "/etc/nagios/nagios_host.cfg",
-           "/etc/nagios/nagios_hostextinfo.cfg",
-           "/etc/nagios/nagios_hostgroup.cfg",
-           "/etc/nagios/nagios_hostgroupescalation.cfg",
-           "/etc/nagios/nagios_service.cfg",
-           "/etc/nagios/nagios_servicedependency.cfg",
-           "/etc/nagios/nagios_serviceescalation.cfg",
-           "/etc/nagios/nagios_serviceextinfo.cfg",
-           "/etc/nagios/nagios_timeperdiod.cfg" ]:
+    file{[ 
+           "/etc/${nagios_pkg}/nagios_command.cfg", 
+           "/etc/${nagios_pkg}/nagios_contact.cfg", 
+           "/etc/${nagios_pkg}/nagios_contactgroup.cfg",
+           "/etc/${nagios_pkg}/nagios_host.cfg",
+           "/etc/${nagios_pkg}/nagios_hostextinfo.cfg",
+           "/etc/${nagios_pkg}/nagios_hostgroup.cfg",
+           "/etc/${nagios_pkg}/nagios_hostgroupescalation.cfg",
+           "/etc/${nagios_pkg}/nagios_service.cfg",
+           "/etc/${nagios_pkg}/nagios_servicedependency.cfg",
+           "/etc/${nagios_pkg}/nagios_serviceescalation.cfg",
+           "/etc/${nagios_pkg}/nagios_serviceextinfo.cfg",
+           "/etc/${nagios_pkg}/nagios_timeperdiod.cfg" ]:
         ensure => file,
         replace => false,
         notify => Service[nagios],
@@ -132,7 +135,7 @@ class nagios::base {
             require => Nagios::Plugin['check_jabber_login'];
 	}
 
-    Nagios_command <<||>>
+  #  Nagios_command <<||>>
     Nagios_contact <<||>>
     Nagios_contactgroup <<||>>
     Nagios_host <<||>>
@@ -164,27 +167,26 @@ class nagios::centos inherits nagios::base {
     # don't forget it to add to the puppet paths
     file { nagios_commands_cfg:
         path => "/etc/nagios/commands.cfg",
-        source => [ "puppet://$server/files/nagios/configs/${fqdn}/commands.cfg",
-                    "puppet://$server/files/nagios/configs/${operatingsystem}/commands.cfg",
-                    "puppet://$server/nagios/configs/${operatingsystem}/commands.cfg" ],
+        source => [ "puppet:///nagios/configs/${fqdn}/commands.cfg",
+                    "puppet:///nagios/configs/${operatingsystem}/commands.cfg" ],
         owner => 'root',
         group => 0,
         mode => '0644',
         notify => Service[nagios],
     }
     # default file from rpm
-    file { nagios_localhost_cfg:
-        path => "/etc/nagios/localhost.cfg",
-        source => [ "puppet://$server/files/nagios/configs/${fqdn}/localhost.cfg",
-                    "puppet://$server/files/nagios/configs/${operatingsystem}/localhost.cfg",
-                    "puppet://$server/nagios/configs/${operatingsystem}/localhost.cfg" ],
-        owner => 'root',
-        group => 0,
-        mode => '0644',
-        notify => Service[nagios],
-    }
+   #" file { nagios_localhost_cfg:
+   #     path => "/etc/nagios/localhost.cfg",
+   #     source => [ "puppet://$server/files/nagios/configs/${fqdn}/localhost.cfg",
+   #                 "puppet://$server/files/nagios/configs/${operatingsystem}/localhost.cfg",
+   #                 "puppet://$server/nagios/configs/${operatingsystem}/localhost.cfg" ],
+   #     owner => 'root',
+   #     group => 0,
+   #     mode => '0644',
+   #     notify => Service[nagios],
+   # }
     file{"/etc/nagios/private/":
-        source => "puppet://$server/nagios/empty",
+        source => "puppet:///nagios/empty",
         ensure => directory,
         purge => true,
         recurse => true,
@@ -192,10 +194,20 @@ class nagios::centos inherits nagios::base {
         mode => '0750', owner => root, group => nagios;
     }
     file{"/etc/nagios/private/resource.cfg":
-        source => "puppet://$server/nagios/configs/${operatingsystem}/private/resource.cfg.${architecture}",
+        source => "puppet:///nagios/configs/${operatingsystem}/private/resource.cfg.${architecture}",
         notify => Service[nagios],
         owner => root, group => nagios, mode => '0640';
     }
 }
 class nagios::darwin inherits nagios::base {}
-class nagios::ubuntu inherits nagios::base {}
+class nagios::ubuntu inherits nagios::base {
+    package { [ 'nagios-plugins',' nagios-plugins-basic',' nagios-plugins-extra','nagios-plugins-standard','nagios-snmp-plugins']:
+        ensure => 'present',
+        notify => Service[nagios3],
+   }
+    Service[nagios3]{
+        hasstatus => true,
+    }
+
+
+}
