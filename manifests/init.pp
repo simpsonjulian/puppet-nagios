@@ -29,38 +29,33 @@ class nagios::base {
 
     # needs apache to work
     include apache
-    case $operatingsystem {
-        centos: { $nagios_pkg = 'nagios' }
-        ubuntu: { $nagios_pkg = 'nagios3'}
-        default: { fail("No such operatingsystem: $operatingsystem yet defined") }
-    }
 
-    package { "$nagios_pkg":
+    package { nagios3:
+        alias => nagios,
         ensure => present,   
-        alias => nagios;
     }
 
-    service{"$nagios_pkg":
+    service{nagios3:
         ensure => running,
         enable => true,
         alias => nagios,
         #hasstatus => true, #fixme!
-        require => Package["nagios"],
+        require => Package["nagios3"],
     }
 
     # manage nagios cfg files
     file {nagios_cfg_dir:
-        path => "/etc/${nagios_pkg}/",
+        path => "/etc/nagios3/",
         source => "puppet:///nagios/empty",
         ensure => directory,
         recurse => true,
         purge => true,
-        notify => Service[nagios],
+        notify => Service[nagios3],
         mode => 0755, owner => root, group => root;
     }
     # this file should contain all the nagios_puppet-paths:
     file {nagios_main_cfg: 
-            path => "/etc/${nagios_pkg}/nagios.cfg",
+            path => "/etc/nagios3/nagios.cfg",
 			source => [ "puppet:///nagios/configs/${fqdn}/nagios.cfg",
                         "puppet:///nagios/configs/${operatingsystem}/nagios.cfg",
                         "puppet:///nagios/configs/nagios.cfg" ],
@@ -68,7 +63,7 @@ class nagios::base {
             mode => 0644, owner => root, group => root;
     }    
     file { nagios_cgi_cfg:
-        path => "/etc/${nagios_pkg}/cgi.cfg",
+        path => "/etc/nagios3/cgi.cfg",
         source => [ "puppet:///nagios/configs/${fqdn}/cgi.cfg",
                     "puppet:///nagios/configs/${operatingsystem}/cgi.cfg",
                     "puppet:///nagios/configs/cgi.cfg" ],
@@ -78,25 +73,25 @@ class nagios::base {
         notify => Service['apache'],
     }
     
-	file {"/etc/${nagios_pkg}/htpasswd.users":
+	file {"/etc/nagios3/htpasswd.users":
             source => [
                 "puppet:///nagios/htpasswd.users" ],
             mode => 0640, owner => root, group => apache;
     }
 
     file{[ 
-           "/etc/${nagios_pkg}/nagios_command.cfg", 
-           "/etc/${nagios_pkg}/nagios_contact.cfg", 
-           "/etc/${nagios_pkg}/nagios_contactgroup.cfg",
-           "/etc/${nagios_pkg}/nagios_host.cfg",
-           "/etc/${nagios_pkg}/nagios_hostextinfo.cfg",
-           "/etc/${nagios_pkg}/nagios_hostgroup.cfg",
-           "/etc/${nagios_pkg}/nagios_hostgroupescalation.cfg",
-           "/etc/${nagios_pkg}/nagios_service.cfg",
-           "/etc/${nagios_pkg}/nagios_servicedependency.cfg",
-           "/etc/${nagios_pkg}/nagios_serviceescalation.cfg",
-           "/etc/${nagios_pkg}/nagios_serviceextinfo.cfg",
-           "/etc/${nagios_pkg}/nagios_timeperdiod.cfg" ]:
+           "/etc/nagios3/nagios_command.cfg", 
+           "/etc/nagios3/nagios_contact.cfg", 
+           "/etc/nagios3/nagios_contactgroup.cfg",
+           "/etc/nagios3/nagios_host.cfg",
+           "/etc/nagios3/nagios_hostextinfo.cfg",
+           "/etc/nagios3/nagios_hostgroup.cfg",
+           "/etc/nagios3/nagios_hostgroupescalation.cfg",
+           "/etc/nagios3/nagios_service.cfg",
+           "/etc/nagios3/nagios_servicedependency.cfg",
+           "/etc/nagios3/nagios_serviceescalation.cfg",
+           "/etc/nagios3/nagios_serviceextinfo.cfg",
+           "/etc/nagios3/nagios_timeperdiod.cfg" ]:
         ensure => file,
         replace => false,
         notify => Service[nagios],
@@ -135,7 +130,7 @@ class nagios::base {
             require => Nagios::Plugin['check_jabber_login'];
 	}
 
-  #  Nagios_command <<||>>
+    Nagios_command <<||>>
     Nagios_contact <<||>>
     Nagios_contactgroup <<||>>
     Nagios_host <<||>>
@@ -201,13 +196,17 @@ class nagios::centos inherits nagios::base {
 }
 class nagios::darwin inherits nagios::base {}
 class nagios::ubuntu inherits nagios::base {
-    package { [ 'nagios-plugins',' nagios-plugins-basic',' nagios-plugins-extra','nagios-plugins-standard','nagios-snmp-plugins']:
+    package { [ 'nagios-plugins','nagios-plugins-basic',' nagios-plugins-extra','nagios-plugins-standard','nagios-snmp-plugins']:
         ensure => 'present',
-        notify => Service[nagios3],
+        notify => Service[nagios],
    }
     Service[nagios3]{
         hasstatus => true,
     }
+    file {
+      "/etc/nagios":
+        ensure => "/etc/nagios3",
+   }
 
 
 }
