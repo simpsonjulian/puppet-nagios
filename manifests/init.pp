@@ -196,7 +196,7 @@ class nagios::centos inherits nagios::base {
 }
 class nagios::darwin inherits nagios::base {}
 class nagios::ubuntu inherits nagios::base {
-    package { [ 'nagios-plugins','nagios-plugins-basic',' nagios-plugins-extra','nagios-plugins-standard','nagios-snmp-plugins']:
+    package { [ 'nagios-plugins','nagios-plugins-basic','nagios-plugins-extra','nagios-plugins-standard','nagios-snmp-plugins']:
         ensure => 'present',
         notify => Service[nagios],
    }
