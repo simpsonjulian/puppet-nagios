@@ -95,6 +95,7 @@ class nagios::base {
         ensure => file,
         replace => false,
         notify => Service[nagios],
+        before => Package[nagios],
         mode => 0644, owner => root, group => 0;
     }
 
